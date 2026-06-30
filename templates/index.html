@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Statement to Excel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <main class="page">
+   
+
+    <section class="card form-card">
+      <form action="{{ url_for('extract') }}" method="post" enctype="multipart/form-data">
+        <fieldset class="card-selector">
+          <legend>Card type</legend>
+          <div class="card-options">
+            {% for value, label in card_options %}
+            <label class="card-option"><br/>
+              <input
+                type="radio"
+                name="card_type"
+                value="{{ value }}"
+                {% if form_data.get('card_type', 'amex') == value %}checked{% endif %}
+              >
+              <span>{{ label }}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </fieldset>
+
+        <label class="file-picker">
+          <span>Statement PDF</span>
+          <input type="file" name="statement_pdf" accept=".pdf,application/pdf" required>
+        </label>
+
+        
+
+        <button type="submit">Extract to Excel</button>
+      </form>
+
+      {% if error %}
+      <div class="message error">{{ error }}</div>
+      {% endif %}
+    </section>
+
+    {% if result %}
+    <section class="card results-card">
+      <div class="results-header">
+        <div>
+          <p class="eyebrow">Ready</p>
+          <h2>{{ result.row_count }} {{ result.card_label }} transactions extracted</h2>
+        </div>
+        <a class="download-link" href="{{ result.download_url }}">Download Excel</a>
+      </div>
+
+      <div class="stats">
+        <div><strong>{{ result.credit_count }}</strong><span>Credits</span></div>
+        <div><strong>{{ result.debit_count }}</strong><span>Debits</span></div>
+        <div><strong>{{ result.preview_rows|length }}</strong><span>Preview rows</span></div>
+      </div>
+
+      {% if result.summary %}
+      <div class="summary">
+        {% for key, value in result.summary.items() %}
+        <div class="summary-item">
+          <span>{{ key }}</span>
+          <strong>{{ value }}</strong>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              {% for column in result.columns %}
+              <th>{{ column }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in result.preview_rows %}
+            <tr>
+              {% for column in result.columns %}
+              <td>{{ row[column] }}</td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+    {% endif %}
+  </main>
+</body>
+</html>
