@@ -3,7 +3,7 @@ from __future__ import annotations
 import secrets
 from pathlib import Path
 
-from flask import Flask, abort, render_template, request, send_file, url_for
+from flask import Flask, abort, after_this_request, render_template, request, send_file, url_for
 from werkzeug.utils import secure_filename
 
 from amex_statement_extractor import dataframe_to_excel_bytes, run_extraction
@@ -145,6 +145,16 @@ def download(token: str):
     if not matches:
         abort(404)
     file_path = matches[0]
+
+    @after_this_request
+    def cleanup_download_files(response):
+        for stored_file in UPLOAD_DIR.glob(f"{token}_*"):
+            try:
+                stored_file.unlink()
+            except OSError:
+                app.logger.warning("Could not remove temporary file %s", stored_file)
+        return response
+
     return send_file(file_path, as_attachment=True, download_name="transactions.xlsx")
 
 
